@@ -19,10 +19,10 @@ A sleek and simple Task Management web app built to bring a little bit of calm t
 Here's a look at the clean, mobile-first interface. Never lose track of your to-dos again!
 
 <div align="center">
-<img src="Screenshot 2025-08-19 231913.png,
-Screenshot 2025-08-19 231927.png,
-Screenshot 2025-08-19 231940.png,
-Screenshot 2025-08-19 232019.png" alt="Task Master Screenshot" width="700"/>
+  <img src="Screenshot 2025-08-19 231913.png" alt="Task Master Screenshot" width="700"/>
+  <img src="Screenshot 2025-08-19 231927.png" alt="Task Master Screenshot" width="700"/>
+  <img src="Screenshot 2025-08-19 231940.png" alt="Task Master Screenshot" width="700"/>
+  <img src="Screenshot 2025-08-19 232019.png" alt="Task Master Screenshot" width="700"/>
 </div>
 
 🚀 Features
