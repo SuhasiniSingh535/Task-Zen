@@ -1,0 +1,312 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Task Master</title>
+{% endblock %}
+
+{% block body %}
+<!-- Side Menu Overlay -->
+<div class="menu-overlay" id="menuOverlay" onclick="closeMenu()"></div>
+
+<!-- Side Menu -->
+<div class="side-menu" id="sideMenu">
+    <div class="menu-header">
+        <h3>Menu</h3>
+        <button class="close-btn" onclick="closeMenu()">&times;</button>
+    </div>
+    <div class="menu-content">
+        <div class="menu-item" onclick="showAllTasks()">
+            <span class="menu-icon">📋</span>
+            <span>All Tasks</span>
+        </div>
+        <div class="menu-item" onclick="showCompletedTasks()">
+            <span class="menu-icon">✅</span>
+            <span>Completed Tasks</span>
+        </div>
+        <div class="menu-item" onclick="clearAllTasks()">
+            <span class="menu-icon">🗑️</span>
+            <span>Clear All Tasks</span>
+        </div>
+        <div class="menu-item" onclick="exportTasks()">
+            <span class="menu-icon">📤</span>
+            <span>Export Tasks</span>
+        </div>
+        <div class="menu-divider"></div>
+        <div class="menu-item" onclick="toggleDarkMode()">
+            <span class="menu-icon">🌙</span>
+            <span>Dark Mode</span>
+        </div>
+        <div class="menu-item" onclick="showStats()">
+            <span class="menu-icon">📊</span>
+            <span>Statistics</span>
+        </div>
+        <div class="menu-item" onclick="showAbout()">
+            <span class="menu-icon">ℹ️</span>
+            <span>About</span>
+        </div>
+    </div>
+</div>
+
+<div class="content">
+    <!-- Header Section -->
+    <div class="header">
+        <h1 onclick="toggleMenu()">Task List</h1>
+        <button class="add-btn" onclick="scrollToForm()">New</button>
+    </div>
+    
+    <!-- Tasks Container -->
+    <div class="tasks-container">
+        {% if tasks|length < 1 %}
+        <h4>No tasks yet. Create your first task below!</h4>
+        {% else %}
+        
+        <!-- Mobile Card View -->
+        {% for task in tasks %}
+        <div class="task-card {% if task.completed %}completed{% endif %}" data-task-id="{{ task.id }}">
+            
+            <div class="task-icon">{{ loop.index }}</div>
+            <div class="task-content">
+                <div class="task-text {% if task.completed %}completed-text{% endif %}">{{ task.content }}</div>
+                <div class="task-date">
+                    {% if task.completed and task.date_completed %}
+                        Completed: {{ task.date_completed.strftime('%b %d, %Y') }}
+                    {% else %}
+                        Added: {{ task.date_created.strftime('%b %d, %Y') }}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="task-actions">
+                <input type="checkbox" 
+                    class="task-check action-checkbox"
+                    title="Mark as complete"
+                    onchange="toggleComplete({{ task.id }})" 
+                    {% if task.completed %}checked{% endif %}>
+                <a href="/update/{{ task.id }}" class="action-btn update-btn" title="Edit"></a>
+                <a href="/delete/{{ task.id }}" class="action-btn delete-btn" title="Delete"></a>
+            </div>
+        </div>
+        {% endfor %}
+        
+        <!-- Desktop Table View (hidden on mobile) -->
+        <table>
+            <tr>
+                <th>#</th>
+                <th>Task</th>
+                <th>Date</th>
+                <th>Actions</th>
+            </tr>
+            {% for task in tasks %}
+            <tr class="{% if task.completed %}completed-row{% endif %}" data-task-id="{{ task.id }}">
+                <td>{{ loop.index }}</td>
+                <td class="task-text {% if task.completed %}completed-text{% endif %}">{{ task.content }}</td>
+                <td class="task-date">
+                    {% if task.completed and task.date_completed %}
+                        Completed: {{ task.date_completed.strftime('%b %d, %Y') }}
+                    {% else %}
+                        Added: {{ task.date_created.strftime('%b %d, %Y') }}
+                    {% endif %}
+                </td>
+                <td>
+                    <input type="checkbox" 
+                        class="task-check action-checkbox"
+                        title="Mark as complete"
+                        onchange="toggleComplete({{ task.id }})" 
+                        {% if task.completed %}checked{% endif %}>
+                    <a href="/delete/{{ task.id }}">Delete</a>
+                    <a href="/update/{{ task.id }}">Update</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endif %}
+        
+        <!-- Add Task Form -->
+        <form action="/" method="POST" id="taskForm">
+            <div class="form-group">
+                <input type="text" name="content" id="content" placeholder="Add your task here..." required>
+            </div>
+            <input type="submit" value="Add Task">
+        </form>
+    </div>
+</div>
+
+<script>
+function scrollToForm() {
+    const form = document.getElementById('taskForm');
+    const input = document.getElementById('content');
+    
+    // Scroll to form
+    form.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+    });
+    
+    // Focus on input field after a short delay
+    setTimeout(() => {
+        input.focus();
+    }, 500);
+}
+
+// Menu Functions
+function toggleMenu() {
+    const menu = document.getElementById('sideMenu');
+    const overlay = document.getElementById('menuOverlay');
+    
+    menu.classList.add('active');
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeMenu() {
+    const menu = document.getElementById('sideMenu');
+    const overlay = document.getElementById('menuOverlay');
+    
+    menu.classList.remove('active');
+    overlay.classList.remove('active');
+    document.body.style.overflow = 'auto';
+}
+
+// Menu Item Functions
+function showAllTasks() {
+    closeMenu();
+    // Reload page to show all tasks
+    window.location.href = '/';
+}
+
+function showCompletedTasks() {
+    closeMenu();
+    window.location.href = '/completed';
+}
+
+function clearAllTasks() {
+    closeMenu();
+    if (confirm('Are you sure you want to delete ALL tasks? This cannot be undone.')) {
+        fetch('/clear-all', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert('Error clearing tasks');
+                }
+            })
+            .catch(() => alert('Error clearing tasks'));
+    }
+}
+
+function exportTasks() {
+    closeMenu();
+    // Get all task data and create downloadable file
+    const tasks = Array.from(document.querySelectorAll('.task-card')).map(card => {
+        const text = card.querySelector('.task-text').textContent;
+        const date = card.querySelector('.task-date').textContent;
+        return `${text} - ${date}`;
+    });
+    
+    const content = tasks.join('\n');
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'my-tasks.txt';
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+function toggleDarkMode() {
+    closeMenu();
+    document.body.classList.toggle('dark-mode');
+    
+    // Save preference
+    const isDark = document.body.classList.contains('dark-mode');
+    localStorage.setItem('darkMode', isDark);
+    
+    alert(isDark ? 'Dark mode enabled!' : 'Light mode enabled!');
+}
+
+function showStats() {
+    closeMenu();
+    const totalTasks = document.querySelectorAll('.task-card').length;
+    const completedTasks = document.querySelectorAll('.task-card.completed').length;
+    
+    alert(`📊 Task Statistics:\n\nTotal Tasks: ${totalTasks}\nCompleted: ${completedTasks}\nPending: ${totalTasks - completedTasks}`);
+}
+
+// New function to toggle task completion
+// New function to toggle task completion
+// DEBUGGING version of toggleComplete function
+function toggleComplete(taskId) {
+    console.log("1. Starting toggle for task ID:", taskId);
+
+    fetch(`/toggle/${taskId}`, { 
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        console.log("2. Received response from server:", response);
+        // We clone the response so we can inspect it and still use it
+        return response.clone().text().then(text => {
+            console.log("3. Server response as plain text:", text);
+            return response.json(); // Now we try to parse it as JSON
+        });
+    })
+    .then(data => {
+        console.log("4. Successfully parsed JSON data:", data);
+
+        if (data.success) {
+            // ... your existing success logic ...
+            const taskElements = document.querySelectorAll(`[data-task-id="${taskId}"]`);
+            taskElements.forEach(element => {
+                const taskText = element.querySelector('.task-text');
+                const taskDate = element.querySelector('.task-date');
+                const allCheckboxes = element.querySelectorAll('.task-check');
+                if (data.completed) {
+                    element.classList.add('completed', 'completed-row');
+                    taskText.classList.add('completed-text');
+                    if (data.date_completed) {
+                        taskDate.textContent = `Completed: ${data.date_completed}`;
+                    }
+                } else {
+                    element.classList.remove('completed', 'completed-row');
+                    taskText.classList.remove('completed-text');
+                    location.reload(); 
+                }
+                allCheckboxes.forEach(checkbox => {
+                    checkbox.checked = data.completed;
+                });
+            });
+        } else {
+            alert('Error updating task status (from else block)');
+        }
+    })
+    .catch(error => {
+        console.error("5. CATCH BLOCK TRIGGERED! Error:", error);
+        alert('Error updating task status');
+    });
+}
+
+function showAbout() {
+    closeMenu();
+    alert('📱 Task Master v1.0\n\nA simple and beautiful task management app built with Flask.\n\nFeatures:\n• Add & manage tasks\n• Clean mobile design\n• Export functionality\n\nMade with ❤️');
+}
+
+// Load dark mode preference
+document.addEventListener('DOMContentLoaded', function() {
+    if (localStorage.getItem('darkMode') === 'true') {
+        document.body.classList.add('dark-mode');
+    }
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', function(e) {
+        const menu = document.getElementById('sideMenu');
+        const title = document.querySelector('h1');
+        
+        if (!menu.contains(e.target) && !title.contains(e.target)) {
+            closeMenu();
+        }
+    });
+});
+</script>
+{% endblock %}

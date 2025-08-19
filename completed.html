@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Completed Tasks - Task Master</title>
+{% endblock %}
+
+{% block body %}
+<div class="content">
+    <!-- Header Section -->
+    <div class="header">
+        <h1>✅ Completed Tasks</h1>
+        <a href="/" class="add-btn">Back</a>
+    </div>
+    
+    <!-- Tasks Container -->
+    <div class="tasks-container">
+        {% if tasks|length < 1 %}
+        <h4>No completed tasks yet. Complete some tasks to see them here! 🎉</h4>
+        {% else %}
+        
+        <!-- Mobile Card View -->
+        {% for task in tasks %}
+        <div class="task-card completed">
+            <div class="task-checkbox">
+                <input type="checkbox" 
+                       id="task-{{ task.id }}" 
+                       class="task-check"
+                       checked
+                       onchange="toggleComplete({{ task.id }})">
+                <label for="task-{{ task.id }}" class="check-label"></label>
+            </div>
+            <div class="task-icon completed-icon">✓</div>
+            <div class="task-content">
+                <div class="task-text completed-text">{{ task.content }}</div>
+                <div class="task-date">Completed: {{ task.date_completed.strftime('%b %d, %Y') }}</div>
+            </div>
+            <div class="task-actions">
+                <a href="/delete/{{ task.id }}" class="action-btn delete-btn" title="Delete"></a>
+            </div>
+        </div>
+        {% endfor %}
+        
+        <!-- Desktop Table View -->
+        <table>
+            <tr>
+                <th>Status</th>
+                <th>Task</th>
+                <th>Completed Date</th>
+                <th>Actions</th>
+            </tr>
+            {% for task in tasks %}
+            <tr class="completed-row">
+                <td>
+                    <input type="checkbox" 
+                           id="desktop-task-{{ task.id }}" 
+                           class="task-check"
+                           checked
+                           onchange="toggleComplete({{ task.id }})">
+                    <label for="desktop-task-{{ task.id }}" class="check-label"></label>
+                </td>
+                <td class="completed-text">{{ task.content }}</td>
+                <td>{{ task.date_completed.strftime('%b %d, %Y') }}</td>
+                <td>
+                    <a href="/delete/{{ task.id }}">Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endif %}
+        
+        <!-- Summary Stats -->
+        <div class="completion-stats">
+            <h3>🎉 Great job!</h3>
+            <p>You have completed <strong>{{ tasks|length }}</strong> task{{ 's' if tasks|length != 1 else '' }}!</p>
+        </div>
+    </div>
+</div>
+
+<script>
+// Function to toggle task completion
+function toggleComplete(taskId) {
+    fetch(`/toggle/${taskId}`, { 
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // If task is uncompleted, remove it from this view
+            if (!data.completed) {
+                location.reload();
+            }
+        } else {
+            alert('Error updating task status');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating task status');
+    });
+}
+</script>
+{% endblock %}
